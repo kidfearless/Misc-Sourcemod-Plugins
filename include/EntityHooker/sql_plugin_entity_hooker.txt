@@ -1,0 +1,10 @@
+CREATE TABLE IF NOT EXISTS plugin_entity_hooker
+(
+	map_id			MEDIUMINT UNSIGNED	NOT NULL,
+	hook_type		SMALLINT UNSIGNED	NOT NULL,
+	hammer_id		INT UNSIGNED		NOT NULL,
+	ent_classname		VARCHAR( 255 )		NOT NULL,
+	custom_data_1		INT			NOT NULL,
+
+	PRIMARY KEY ( map_id, hook_type, hammer_id )
+) ENGINE = INNODB;
