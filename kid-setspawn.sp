@@ -26,7 +26,7 @@ public void OnPluginStart()
 	RegConsoleCmd("sm_setspawn", Command_SetSpawn);
 	RegConsoleCmd("sm_ssp", Command_SetSpawn);
 	RegConsoleCmd("sm_setstart", Command_SetSpawn);
-	RegConsoleCmd("sm_removestart", Command_SetSpawn);
+	RegConsoleCmd("sm_removestart", Command_ClearSpawn);
 	RegConsoleCmd("sm_removespawn", Command_ClearSpawn);
 	RegConsoleCmd("sm_clearspawn", Command_ClearSpawn);
 	RegConsoleCmd("sm_clearstart", Command_ClearSpawn);
@@ -78,8 +78,20 @@ public void Shavit_OnRestart(int client, int track)
 		if(track == gI_SavedTrack[client])
 		{
 			Shavit_StopTimer(client);
-			TeleportEntity(client, gF_PlayerOrigin[client], gF_PlayerAngles[client], view_as<float>({0.0, 0.0, 0.0}));
-		}	
+			RequestFrame(OnPostRestart, GetClientSerial(client));
+			// since the callbacks have been broken and calling out of place we're going to teleport them for 2 ticks.
+			// one for when it works, one for when it doesn't. both so that the angles don't flicker.
+			TeleportEntity(client, gF_PlayerOrigin[client], gF_PlayerAngles[client], NULL_VECTOR);
+		}
+	}
+}
+
+public void OnPostRestart(int serial)
+{
+	int client = GetClientFromSerial(serial);
+	if(client > 0)
+	{
+		TeleportEntity(client, gF_PlayerOrigin[client], gF_PlayerAngles[client], NULL_VECTOR);
 	}
 }
 
