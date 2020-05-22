@@ -1,6 +1,6 @@
 #include <sourcemod>
 #undef REQUIRE_PLUGIN
-#include <smc>
+// #include <smc>
 #pragma newdecls required
 
 //bool gB_IsMySql;
