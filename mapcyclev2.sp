@@ -4,10 +4,11 @@
 
 #define DB_NAME			"db_mapcycle"
 #define DEFAULT_MAP		726282962
+#define DEFAULT_SMAP	"726282962"
 #define HOUR			3600
 #define DAY 			86400
 #define CHICAGO_OFFSET	-18000
-const bool WIPE_SERVER = true;
+#define WIPE_SERVER 1
 Database gDB_Mapcycle = null;
 
 Menu MapsFolder = null;
@@ -47,10 +48,9 @@ public void OnPluginStart()
 
 	//Create maplist database.
 	DB_CreateTables();
-	if(WIPE_SERVER)
-	{
-		RestartTimer = CreateTimer(1.0, Timer_Restart, _, TIMER_REPEAT);
-	}
+	#if WIPE_SERVER
+	RestartTimer = CreateTimer(1.0, Timer_Restart, _, TIMER_REPEAT);
+	#endif
 	
 	gR_WorkshopID = new Regex("(\\d+)");
 
@@ -90,23 +90,22 @@ public void OnMapStart()
 	if(StringToInt(id) != 0)
 	{
 		AddMapToList(id, currentMap);
-
+	}
 	CreateMapsMenu();
 }
 
 public void OnMapEnd()
 {
-	if(WIPE_SERVER)
+	#if WIPE_SERVER
+	if(RestartServer)
 	{
-		if(RestartServer)
-		{
-			LogMessage("** Deleting all maps **");
+		LogMessage("** Deleting all maps **");
 
-			DeleteAllMaps();
-			LogMessage("** Deleted all maps **");
-			CreateTimer(15.0, Timer_RestartServer);
-		}
+		DeleteAllMaps();
+		LogMessage("** Deleted all maps **");
+		CreateTimer(15.0, Timer_RestartServer);
 	}
+	#endif
 }
 
 public Action Timer_RestartServer(Handle timer, Handle hndl)
@@ -317,7 +316,7 @@ public Action Command_Request(int client, int args)
 void DB_CreateTables()
 {
 	char query[256];
-	FormatEx(query, sizeof(query), "CREATE TABLE IF NOT EXISTS 'db_maplist' ( `WorkshopID` INTEGER NOT NULL UNIQUE, `Map` TEXT NOT NULL, `Save` INTEGER NOT NULL DEFAULT 0 );" ...
+	FormatEx(query, sizeof(query), "CREATE TABLE IF NOT EXISTS 'db_maplist' ( `WorkshopID` NUMERIC NOT NULL UNIQUE, `Map` TEXT NOT NULL, `Save` INTEGER NOT NULL DEFAULT 0 );" ...
 									"CREATE TABLE CREATE TABLE db_requests (Request TEXT, UserID TEXT, Name TEXT);");
 	gDB_Mapcycle.Query(NullCallback, query, _, DBPrio_Low);
 }
@@ -375,20 +374,20 @@ public void DeleteMapCallback(Database db, DBResultSet results, const char[] err
 	{
 		char query[256];
 		FormatEx(query, sizeof(query), "DELETE FROM db_maplist WHERE WorkshopID = '%s';", id);
-		DeleteFolder(StringToInt(id));
+		DeleteFolder(id);
 		gDB_Mapcycle.Query(NullCallback, query, _, DBPrio_Low);
 	}
 }
 
-void DeleteFolder(int id)
+void DeleteFolder(const char[] id)
 {
-	if(id == DEFAULT_MAP || id == 0)
+	if(StrEqual(id,DEFAULT_SMAP) || StringToInt(id) == 0)
 	{
 		return;
 	}
 
 	char directory[PLATFORM_MAX_PATH];
-	FormatEx(directory, sizeof(directory), "maps/workshop/%i/", id);
+	FormatEx(directory, sizeof(directory), "maps/workshop/%s/", id);
 	DirectoryListing workshopFolder = OpenDirectory(directory);
 	char buffer[PLATFORM_MAX_PATH];
 
@@ -398,7 +397,7 @@ void DeleteFolder(int id)
 		{
 			continue;
 		}
-		FormatEx(buffer, sizeof(buffer), "maps/workshop/%i/%s", id, directory);
+		FormatEx(buffer, sizeof(buffer), "maps/workshop/%s/%s", id, directory);
 		DeleteFile(buffer);
 		LogMessage("[SM] - DeleteFolder - %s", buffer);
 	}
@@ -422,7 +421,7 @@ void DeleteAllMaps()
 		int workshopID = StringToInt(buffer);
 		if((workshopID != currentMap) && (workshopID != 0) && (workshopID != DEFAULT_MAP))
 		{
-			DeleteFolder(workshopID);
+			DeleteFolder(buffer);
 		}
 	}
 	delete workshopFolder;
